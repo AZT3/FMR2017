@@ -9,6 +9,8 @@ def calculate_angle(vector1, vector2):
     if angle<0: angle+=2*pi
     return angle
 
+def to_polar(tup):#Converts cartesian tuple into polar
+    return [sqrt(pow(abs(tup[0]),2)+pow(abs(tup[1]),2)), calculate_angle((0,0),tup)]
+
 if __name__ == "__main__":
-    vetor=(1,-1)
-    print(180*calculate_angle((0,0), vetor)/pi)
+    print(type((90,90)) == tuple)
