@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 __author__ = "Sergio Noriega Heredia"
 __date__ = "$Mar 21, 2017 1:49:55 PM$"
 
