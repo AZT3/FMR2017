@@ -64,9 +64,10 @@ if __name__ == "__main__":
     max_velocity=0.5
     mode="normal"
     home=(90,-30)
-    route_home=[(90,90),home]
+    route_home=[home]
     route_arena1=[(90,90),(180,90)]
     route_arena2=[(90,90),(90,180)]
+    seconds_running=0
     #legolego=lego_init()
 
 
@@ -102,9 +103,10 @@ if __name__ == "__main__":
     objectives.extend(route_arena2)
     objectives.append("scan")
     
+    objectives.extend(route_home)
     objectives.append("home")
     
-    route=[]
+    route=()
     
     ##SCREEN RELATED STUFF##
     screen_size=(500,500)###CONSTANT
@@ -116,6 +118,7 @@ if __name__ == "__main__":
     text_position=canvas.create_text(200,10,text="Position: "+str(position))
     text_velocity=canvas.create_text(200,20,text="velocity: "+str(velocity),fill="blue")
     text_angle=canvas.create_text(200,30,text="angle: "+str(velocity),fill="brown")
+    text_seconds=canvas.create_text(200,450,text=""+str(seconds_running)+" seconds running",fill="black")
     dobj=objectives[0]
     graphical_objective=canvas.create_oval(pan[0]+dobj[0]-4,screen_size[1]-(pan[1]+dobj[1]-4), pan[0]+dobj[0]+4,screen_size[1]-(pan[1]+dobj[1]+4), fill="blue")
     for dobs in obstacles:
@@ -129,19 +132,21 @@ if __name__ == "__main__":
     
     ##MAIN LOOP##
     while not len(objectives)==0:
+        seconds_running+=1/18
+        canvas.itemconfigure(text_seconds,text=""+str(seconds_running)+" seconds running")
         if mode=="normal":    
             #Velocity Calculation#
             new_velocity=velocity
             new_velocity=add_vectors(new_velocity, inertia_vector(1, 0.5, position, objectives[active_objective]))
             for vobs in obstacles:
-                new_velocity=add_vectors(new_velocity, inertia_vector(-50, 3, position, vobs))
+                new_velocity=add_vectors(new_velocity, inertia_vector(-100, 3, position, vobs))
             new_velocity=add_vectors(new_velocity, inertia_vector(-100, 2, position, black_holes[0]))
             new_velocity=to_polar(new_velocity)
             #print(new_velocity)
             if new_velocity[0]>max_velocity: new_velocity[0]=max_velocity
             new_velocity=to_cartesian(new_velocity)
             velocity=new_velocity
-            canvas.itemconfigure(text_velocity,text="velocity: "+str(to_polar(velocity)))
+            canvas.itemconfigure(text_velocity,text="velocity: "+str(velocity))
 
             #Position Calculation#
             canvas.delete(graphical_position)
@@ -167,12 +172,14 @@ if __name__ == "__main__":
                 for comb2 in dummies:
                     if(distance(comb2, sensor_input)<=safe_distance):
                         is_usable=False
-                if(distance(black_holes[0], sensor_input)<=safe_distance):
+                if(distance(black_holes[0], sensor_input)<=25):
                         is_usable=False
                 if(is_usable):
-                    objectives.insert(1,"return_home")
-                    objectives.insert(1,(90,90))
                     objectives.insert(1,"rescue")
+                    objectives.insert(2,route)
+                    objectives.insert(3,"return_home")
+                    objectives.insert(4,(90,90))
+                    objectives.insert(5,route)
                     dummies.append(tuple(sensor_input))
                     dobs=sensor_input
                     canvas.create_oval(pan[0]+dobs[0]-3,screen_size[1]-(pan[1]+dobs[1]-3), pan[0]+dobs[0]+3,screen_size[1]-(pan[1]+dobs[1]+3), fill="green")
@@ -185,7 +192,7 @@ if __name__ == "__main__":
                 canvas.delete(graphical_objective)
                 if objective_completed(objectives[active_objective], position):
                     mode="evaluate"
-                    route.append(objectives.pop(0))
+                    route=objectives.pop(0)
                     #legodirection=gyro_input(lego["gyro_sensor"]*pi/180)
                     rotation_start=direction
                     print("Objective Completed")
@@ -204,12 +211,11 @@ if __name__ == "__main__":
             elif(objectives[active_objective]=="rescue"):
                 objectives.pop(0)
                 objectives.insert(0,dummies[0])
-                actual_dummie=dummies[0]
+                objectives.insert(1,"check_color")
                 dummies.pop(0)
             elif(objectives[active_objective]=="return"):
                 objectives.pop(0)
-                for r in range(len(route)):
-                    objectives.insert(0,route[r])
+                objectives.insert(0,route)
                 mode="normal"
                 print("Returning route "+str(route))
             elif(objectives[active_objective]=="delete_route"):
@@ -223,7 +229,6 @@ if __name__ == "__main__":
             elif(objectives[active_objective]=="home"):
                 objectives.pop(0)
                 print(str(objectives))
-                break
         else:
             print("Finished!")
 
