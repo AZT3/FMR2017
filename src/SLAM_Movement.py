@@ -5,7 +5,8 @@ __date__ = "$Mar 21, 2017 1:49:55 PM$"
 from math import *
 from tkinter import *
 from time import sleep
-from lego_module import *
+from random import randrange
+#legofrom lego_module import *
 
 def distance(tup1,tup2):#Gives the distance between two tuples
     return sqrt(pow(abs(tup1[0]-tup2[0]),2)+pow(abs(tup1[1]-tup2[1]),2))
@@ -40,26 +41,33 @@ def objective_completed(objective,position):
 def middle_point(point1,point2):
     return [(point2[0]+point1[0])/2,(point2[1]+point1[1])/2]
 
-def make_obstacle_line(wall,list):
-    if(distance(wall[0],wall[1])<20):
+def make_obstacle_line(wall,list,safe_distance):
+    if(distance(wall[0],wall[1])<safe_distance):
         if not wall[0] in list:
             list.append(wall[0])
         if not wall[1] in list:
             list.append(wall[1])
     else:
         middle=middle_point(wall[0], wall[1])
-        make_obstacle_line((middle, wall[0]), list)
-        make_obstacle_line((middle, wall[1]), list)
+        make_obstacle_line((middle, wall[0]), list, safe_distance)
+        make_obstacle_line((middle, wall[1]), list, safe_distance)
     
 if __name__ == "__main__":
     ##INITIALIZATION##
+    safe_distance=10
     active_objective=0
     pan=(100,100)###Constant
-    position=[100,-10]
+    position=[110,-10]
     direction=pi/2
+    rotation_start=0
     velocity=[0,0]
     max_velocity=0.5
     mode="normal"
+    home=(90,-30)
+    route_home=[(90,90),home]
+    route_arena1=[(90,90),(180,90)]
+    route_arena2=[(90,90),(90,180)]
+    #legolego=lego_init()
 
 
     ##ACTIVITY VARIABLES##
@@ -75,35 +83,27 @@ if __name__ == "__main__":
     ((360,0),(360,180)),
     ((0,360),(180,360)),
     ###Black Hole Walls
-    ((245,90),(270,115)),
-    ((245,90),(270,65)),
+    #((245,90),(270,115)),
+    #((245,90),(270,65)),
     ###Moveable
-    ((110,270),(180,280)),
-    ((110,270),(180,260))
+    ((110,270),(180,270))
     ]                       #List of walls to avoid
     obstacles=[
     ]                       #List obstacles to avoid
     black_holes=[
     (270,90)
     ]
-    for new_obstacle in defined_walls: make_obstacle_line(new_obstacle, obstacles)
-    wanted_dummies=[
+    for new_wall in defined_walls: make_obstacle_line(new_wall, obstacles, 2*safe_distance)
+    dummies=[]              #List of dummies to get to
+    objectives=[]           #List of objectives to go to
+    objectives.extend(route_arena1)
+    objectives.append("scan")
     
-    ]       #List of dummies to get to
+    objectives.extend(route_arena2)
+    objectives.append("scan")
     
+    objectives.append("home")
     
-    objectives=[
-    (90,90),
-    (180,90),
-    (200,90),
-    (300,90),
-    "scan",
-    "return",
-    "delete_route",
-    (90,270),
-    
-    (90,-30)
-    ]                       #List of objectives to go to
     route=[]
     
     ##SCREEN RELATED STUFF##
@@ -151,8 +151,32 @@ if __name__ == "__main__":
             direction=calculate_angle((0,0), velocity)
             canvas.itemconfigure(text_position,text="Position: "+str(position))
             canvas.itemconfigure(text_angle,text="angle: "+str(direction)+" rad")
+        
         elif(mode=="scan"):
-            False
+            canvas.itemconfigure(text_angle,text="angle: "+str(direction)+" rad")
+            #legodistance_to_object=ultra_input(lego["ultra_sensor"])
+            #legoradial_direction=gyro_input(lego["gyro_sensor"]*pi/180)
+            distance_to_object=randrange(10,2600,safe_distance)
+            if(distance_to_object<100 and distance_to_object>10):
+                #legosensor_input=add_vectors(to_cartesian([distance_to_object,radial_direction)]),position)
+                sensor_input=add_vectors(to_cartesian([distance_to_object,direction]),position)
+                is_usable=True
+                for comb1 in obstacles:
+                    if(distance(comb1, sensor_input)<=safe_distance):
+                        is_usable=False
+                for comb2 in dummies:
+                    if(distance(comb2, sensor_input)<=safe_distance):
+                        is_usable=False
+                if(distance(black_holes[0], sensor_input)<=safe_distance):
+                        is_usable=False
+                if(is_usable):
+                    objectives.insert(1,"return_home")
+                    objectives.insert(1,(90,90))
+                    objectives.insert(1,"rescue")
+                    dummies.append(tuple(sensor_input))
+                    dobs=sensor_input
+                    canvas.create_oval(pan[0]+dobs[0]-3,screen_size[1]-(pan[1]+dobs[1]-3), pan[0]+dobs[0]+3,screen_size[1]-(pan[1]+dobs[1]+3), fill="green")
+                    print("Dummie at "+str(sensor_input))
         
         #Objectives Calculation#
         if not len(objectives)==0:
@@ -160,36 +184,51 @@ if __name__ == "__main__":
                 mode="normal"
                 canvas.delete(graphical_objective)
                 if objective_completed(objectives[active_objective], position):
+                    mode="evaluate"
                     route.append(objectives.pop(0))
+                    #legodirection=gyro_input(lego["gyro_sensor"]*pi/180)
+                    rotation_start=direction
                     print("Objective Completed")
-                    print(str(route))
+                    print(str(objectives))
                 else:
                     dobj=objectives[active_objective]
                     graphical_objective=canvas.create_oval(pan[0]+dobj[0]-4,screen_size[1]-(pan[1]+dobj[1]-4), pan[0]+dobj[0]+4,screen_size[1]-(pan[1]+dobj[1]+4), fill="blue")
-            if(objectives[active_objective]=="scan"):
-                ###CODE FOR SCANNING IS MISSING HERE!
+            elif(objectives[active_objective]=="scan"):
+                if(rotation_start+2*pi<direction):
+                    objectives.pop(0)
+                    print("Scanned")
+                    print(str(objectives))
+                else:
+                    direction+=pi/180
+                    mode="scan"
+            elif(objectives[active_objective]=="rescue"):
                 objectives.pop(0)
-                mode="scan"
-                print("Scanned")
+                objectives.insert(0,dummies[0])
+                actual_dummie=dummies[0]
+                dummies.pop(0)
             elif(objectives[active_objective]=="return"):
                 objectives.pop(0)
                 for r in range(len(route)):
                     objectives.insert(0,route[r])
                 mode="normal"
-                print("Returing route "+str(route))
+                print("Returning route "+str(route))
             elif(objectives[active_objective]=="delete_route"):
                 objectives.pop(0)
                 route=[]
-                print(route)
+                print("Deleted route")
+            elif(objectives[active_objective]=="return_home"):
+                objectives.pop(0)
+                for rh in route_home:
+                    objectives.insert(0,rh)
+            elif(objectives[active_objective]=="home"):
+                objectives.pop(0)
+                print(str(objectives))
+                break
         else:
             print("Finished!")
 
         #Obstacles#
-        sensor_input=0,0
-        if(not sensor_input in obstacles):
-            #If it does not remember that obstacle, it adds it to the obstacles section and the screen.
-            obstacles.append(sensor_input)
-            canvas.create_oval(pan[0]+sensor_input[0]-2,screen_size[1]-(pan[1]+sensor_input[1]-2), pan[0]+sensor_input[0]-2,screen_size[1]-(pan[1]+sensor_input[1]-2), fill="black")
+        #canvas.create_oval(pan[0]+sensor_input[0]-2,screen_size[1]-(pan[1]+sensor_input[1]-2), pan[0]+sensor_input[0]-2,screen_size[1]-(pan[1]+sensor_input[1]-2), fill="black")
         sleep(1/25)
         canvas.update()
     

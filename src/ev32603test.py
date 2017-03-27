@@ -13,16 +13,16 @@ assert all([m.connected for m in motors]), \
     "Two large motors should be connected to ports B and C"
 
 # Configure infrared sensor
-pr = UltrasonicSensor()
-assert pr.connected
+ultra_sensor = UltrasonicSensor()
+assert ultra_sensor.connected
 
 # Configure touch sensor
 ts = TouchSensor()
 assert ts.connected
 
 # Configure Gyroscope Sensor
-tg = GyroSensor()
-assert tg.connected
+gyro_sensor = GyroSensor()
+assert gyro_sensor.connected
 
 # Configure Color Sensor
 ty = ColorSensor()
@@ -83,10 +83,10 @@ while not btn.any():
         continue
 
     # Read proximity sensor
-    d = pr.value()
+    d = ultra_sensor.value()
     print(d)
 
-    e = tg.value()
+    e = gyro_sensor.value()
     print(e)
     
     y = ty.color()
