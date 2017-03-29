@@ -33,5 +33,5 @@ def ultra_input(sensor):
 def gyro_input(sensor):
     return sensor.angle()
 
-def motor_command(motor,speed):
+def motor_command(velocity,actual_position,actual_angle):
     return 

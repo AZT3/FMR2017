@@ -68,8 +68,10 @@ if __name__ == "__main__":
     route_arena1=[(90,90),(180,90)]
     route_arena2=[(90,90),(90,180)]
     seconds_running=0
+    target_dummie=1
+    ####BLACK=1
+    ####WHITE=6
     #legolego=lego_init()
-
 
     ##ACTIVITY VARIABLES##
     defined_walls=[
@@ -133,6 +135,13 @@ if __name__ == "__main__":
     ##MAIN LOOP##
     while not len(objectives)==0:
         seconds_running+=1/18
+        #LEGO DEBUGGING#
+        #legodistance_to_object=ultra_input(lego["ultra_sensor"])
+        #legoradial_direction=gyro_input(lego["gyro_sensor"]*pi/180)
+        #legosensor_input=add_vectors(to_cartesian([distance_to_object,radial_direction)]),position)
+        #legodirection=gyro_input(lego["gyro_sensor"]*pi/180)
+        #legocolor=color_input(lego["color_sensor"])
+        
         canvas.itemconfigure(text_seconds,text=""+str(seconds_running)+" seconds running")
         if mode=="normal":    
             #Velocity Calculation#
@@ -142,13 +151,14 @@ if __name__ == "__main__":
                 new_velocity=add_vectors(new_velocity, inertia_vector(-100, 3, position, vobs))
             new_velocity=add_vectors(new_velocity, inertia_vector(-100, 2, position, black_holes[0]))
             new_velocity=to_polar(new_velocity)
-            #print(new_velocity)
             if new_velocity[0]>max_velocity: new_velocity[0]=max_velocity
             new_velocity=to_cartesian(new_velocity)
             velocity=new_velocity
             canvas.itemconfigure(text_velocity,text="velocity: "+str(velocity))
 
             #Position Calculation#
+            #if()
+            #else:
             canvas.delete(graphical_position)
             graphical_position=canvas.create_oval(pan[0]+position[0]-2,screen_size[1]-(pan[1]+position[1]-2), pan[0]+position[0]+2,screen_size[1]-(pan[1]+position[1]+2), fill="red")
             position[0]+=velocity[0]
@@ -156,14 +166,13 @@ if __name__ == "__main__":
             direction=calculate_angle((0,0), velocity)
             canvas.itemconfigure(text_position,text="Position: "+str(position))
             canvas.itemconfigure(text_angle,text="angle: "+str(direction)+" rad")
+            
+            
         
         elif(mode=="scan"):
             canvas.itemconfigure(text_angle,text="angle: "+str(direction)+" rad")
-            #legodistance_to_object=ultra_input(lego["ultra_sensor"])
-            #legoradial_direction=gyro_input(lego["gyro_sensor"]*pi/180)
             distance_to_object=randrange(10,2600,safe_distance)
             if(distance_to_object<100 and distance_to_object>10):
-                #legosensor_input=add_vectors(to_cartesian([distance_to_object,radial_direction)]),position)
                 sensor_input=add_vectors(to_cartesian([distance_to_object,direction]),position)
                 is_usable=True
                 for comb1 in obstacles:
@@ -177,9 +186,6 @@ if __name__ == "__main__":
                 if(is_usable):
                     objectives.insert(1,"rescue")
                     objectives.insert(2,route)
-                    objectives.insert(3,"return_home")
-                    objectives.insert(4,(90,90))
-                    objectives.insert(5,route)
                     dummies.append(tuple(sensor_input))
                     dobs=sensor_input
                     canvas.create_oval(pan[0]+dobs[0]-3,screen_size[1]-(pan[1]+dobs[1]-3), pan[0]+dobs[0]+3,screen_size[1]-(pan[1]+dobs[1]+3), fill="green")
@@ -193,10 +199,8 @@ if __name__ == "__main__":
                 if objective_completed(objectives[active_objective], position):
                     mode="evaluate"
                     route=objectives.pop(0)
-                    #legodirection=gyro_input(lego["gyro_sensor"]*pi/180)
                     rotation_start=direction
                     print("Objective Completed")
-                    print(str(objectives))
                 else:
                     dobj=objectives[active_objective]
                     graphical_objective=canvas.create_oval(pan[0]+dobj[0]-4,screen_size[1]-(pan[1]+dobj[1]-4), pan[0]+dobj[0]+4,screen_size[1]-(pan[1]+dobj[1]+4), fill="blue")
@@ -204,7 +208,6 @@ if __name__ == "__main__":
                 if(rotation_start+2*pi<direction):
                     objectives.pop(0)
                     print("Scanned")
-                    print(str(objectives))
                 else:
                     direction+=pi/180
                     mode="scan"
@@ -218,22 +221,40 @@ if __name__ == "__main__":
                 objectives.insert(0,route)
                 mode="normal"
                 print("Returning route "+str(route))
-            elif(objectives[active_objective]=="delete_route"):
-                objectives.pop(0)
-                route=[]
-                print("Deleted route")
+#            elif(objectives[active_objective]=="delete_route"):
+#                objectives.pop(0)
+#                route=[]
+#                print("Deleted route")
             elif(objectives[active_objective]=="return_home"):
                 objectives.pop(0)
+                ###LEGO STUFF MISSING FOR UNLOADING
                 for rh in route_home:
                     objectives.insert(0,rh)
             elif(objectives[active_objective]=="home"):
                 objectives.pop(0)
                 print(str(objectives))
+            elif(objectives[active_objective]=="check_color"):
+                objectives.pop(0)
+                color=randrange(0,7)
+                print("Checked color")
+                if(color==1):
+                    print("BLACK DUMMIE DETECTED")
+                elif(color==5):
+                    print("RED DUMMIE DETECTED")
+                elif(color==6):
+                    print("WHITE DUMMIE DETECTED")
+                elif(color==0):
+                    print("NOTHING DETECTED! - WARNING")
+                else:
+                    print("NO MATCH TO COLORS- WARNING")
+                if(color==target_dummie):
+                    #LEGO STUFF MISSING FOR LOADING
+                    print("Dummie loaded")
+                    objectives.insert(1,objectives[0])
+                    objectives.insert(1,"return_home")
+                    objectives.insert(2,(90,90))
         else:
             print("Finished!")
-
-        #Obstacles#
-        #canvas.create_oval(pan[0]+sensor_input[0]-2,screen_size[1]-(pan[1]+sensor_input[1]-2), pan[0]+sensor_input[0]-2,screen_size[1]-(pan[1]+sensor_input[1]-2), fill="black")
         sleep(1/25)
         canvas.update()
     
