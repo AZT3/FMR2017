@@ -16,6 +16,8 @@ def lego_init():
     
     gyro_sensor=GyroSensor()
     assert gyro_sensor.connected
+    gyro_sensor.mode='GYRO-CAL'
+    gyro_sensor.mode='GYRO-ANG'
     
     return {
     "motors":motors,
@@ -25,13 +27,21 @@ def lego_init():
     }
 
 def color_input(sensor):
-    return sensor.color()
+    return sensor.color
     
 def ultra_input(sensor):
-    return sensor.distance_centimeters()
+    return sensor.distance_centimeters
 
 def gyro_input(sensor):
-    return sensor.angle()
+    return sensor.angle
 
-def motor_command(velocity,actual_position,actual_angle):
-    return 
+def motor_command(motors, velocity_polar, actual_angle):
+    multiplier=60
+    if(actual_angle>=pi): actual_angle-=2*pi
+    dutyb=velocity[0]*multiplier-(actual_angle-velocity[1])*25
+    if(dutyb>=100): dutyb=100
+    dutyc=velocity[0]*multiplier+(actual_angle-velocity[1])*25
+    if(dutyc>=100): dutyc=100
+    motors[1].run_direct(duty_cycle_sp=dutyb)#B-left
+    motors[2].run_direct(duty_cycle_sp=dutyc)#C-right
+    return
