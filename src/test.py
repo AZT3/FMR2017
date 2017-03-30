@@ -1,5 +1,4 @@
 from math import *
-from lego_module import *
 
 def calculate_angle(vector1, vector2):
     x=vector2[0]-vector1[0]
@@ -13,4 +12,4 @@ def calculate_angle(vector1, vector2):
 def to_polar(tup):#Converts cartesian tuple into polar
     return [sqrt(pow(abs(tup[0]),2)+pow(abs(tup[1]),2)), calculate_angle((0,0),tup)]
 
-print("Hello world")
+print(str(list((0,0))))

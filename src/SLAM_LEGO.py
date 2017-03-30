@@ -3,7 +3,6 @@ __author__ = "Sergio Noriega Heredia"
 __date__ = "$Mar 21, 2017 1:49:55 PM$"
 
 from math import *
-from time import sleep
 from lego_module import *
 
 def distance(tup1,tup2):#Gives the distance between two tuples
@@ -53,18 +52,19 @@ def make_obstacle_line(wall,list,safe_distance):
 if __name__ == "__main__":
     ##INITIALIZATION##
     safe_distance=5
+    days=90/180*pi#######
     active_objective=0
-    position=[110,-10]
-    direction=pi/2
+    direction=days
     rotation_start=0
     velocity=[0,0]
     max_velocity=0.5
     mode="normal"
-    home=(90,-30)
+    home=(90,-20)#######
+    position=list(home)
     route_home=[home]
     route_arena1=[(90,90),(180,90)]
     route_arena2=[(90,90),(90,180)]
-    target_dummie=1
+    target_dummie=1#######
     ####BLACK=1
     ####WHITE=6
     lego=lego_init()
@@ -105,12 +105,10 @@ if __name__ == "__main__":
     
     ##MAIN LOOP##
     while not len(objectives)==0:
-        seconds_running+=1/18
         #LEGO DEBUGGING#
-        distance_to_object=ultra_input(lego["ultra_sensor"])
-        legoradial_direction=gyro_input(lego["gyro_sensor"]*pi/180)
-        sensor_input=add_vectors(to_cartesian([distance_to_object,radial_direction]),position)
-        direction=gyro_input(lego["gyro_sensor"]*pi/180)
+        distance_to_object=ultra_input(lego["ultra_sensor"])/10
+        direction=gyro_input(lego["gyro_sensor"])*pi/180+days
+        sensor_input=add_vectors(to_cartesian([distance_to_object,direction]),position)
         color=color_input(lego["color_sensor"])
         
         if mode=="normal":    
@@ -127,16 +125,29 @@ if __name__ == "__main__":
             motor_command(lego["motors"],to_polar(velocity),direction)
             
             #Position Calculation#
-            if(distance_to_object>=60 or distance_to_object<=5):
-                pass
-            else:
+            if(distance_to_object>=120 or distance_to_object<=5):
                 position[0]+=velocity[0]
                 position[1]+=velocity[1]
-                direction=calculate_angle((0,0), velocity)
+            else:
+                seeing="None"
+                for comb1 in obstacles:
+                    if(distance(comb1, sensor_input)<=safe_distance):
+                        seeing="obstacle"
+                        print("Located by obstacle: "+str(position))
+                        break
+                if(not seeing=="obstacle"):
+                    for comb2 in dummies:
+                        if(distance(comb2, sensor_input)<=safe_distance):
+                            seeing="dummie"
+                            print("Located by sensor_input: "+str(position))
+                            break
+                if(seeing=="None"):
+                    print("Location Unavailable. Calculated: "+str(position))
+                    position[0]+=velocity[0]
+                    position[1]+=velocity[1]
             
         elif(mode=="scan"):
             if(distance_to_object<100 and distance_to_object>15):
-                sensor_input=add_vectors(to_cartesian([distance_to_object,direction]),position)
                 is_usable=True
                 for comb1 in obstacles:
                     if(distance(comb1, sensor_input)<=safe_distance):
@@ -150,7 +161,6 @@ if __name__ == "__main__":
                     objectives.insert(1,"rescue")
                     objectives.insert(2,route)
                     dummies.append(tuple(sensor_input))
-                    dobs=sensor_input
                     print("Dummie at "+str(sensor_input))
         
         #Objectives Calculation#
@@ -169,6 +179,7 @@ if __name__ == "__main__":
                     objectives.pop(0)
                     print("Scanned")
                 else:
+                    motor_command(lego["motors"],(0,direction+pi*15/180),direction)
                     mode="scan"
             elif(objectives[active_objective]=="rescue"):
                 objectives.pop(0)
@@ -180,10 +191,6 @@ if __name__ == "__main__":
                 objectives.insert(0,route)
                 mode="normal"
                 print("Returning route "+str(route))
-#            elif(objectives[active_objective]=="delete_route"):
-#                objectives.pop(0)
-#                route=[]
-#                print("Deleted route")
             elif(objectives[active_objective]=="return_home"):
                 objectives.pop(0)
                 ###LEGO STUFF MISSING FOR UNLOADING
@@ -194,7 +201,6 @@ if __name__ == "__main__":
                 print(str(objectives))
             elif(objectives[active_objective]=="check_color"):
                 objectives.pop(0)
-                color=randrange(0,7)
                 print("Checked color")
                 if(color==1):
                     print("BLACK DUMMIE DETECTED")
@@ -214,5 +220,4 @@ if __name__ == "__main__":
                     objectives.insert(2,(90,90))
         else:
             print("Finished!")
-        sleep(1/25)
     
